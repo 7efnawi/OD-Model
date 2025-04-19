@@ -1,4 +1,19 @@
-# Python
+# Ignore specific directories
+annotations/
+COCO_small/
+labels/
+train2017/
+val2017/
+
+# Ignore specific files
+MY_coco_yolov5.yaml
+val2017.cache
+COCO.ipynb
+
+# Ignore video files
+*.mp4
+
+# Ignore common Python files
 __pycache__/
 *.py[cod]
 *$py.class
@@ -20,22 +35,15 @@ var/
 .installed.cfg
 *.egg
 
-# Virtual Environment
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore virtual environment
 venv/
 ENV/
 
-# IDE
+# Ignore IDE specific files
 .idea/
 .vscode/
 *.swp
 *.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Project specific
-*.pt
-*.pth
-*.onnx
-*.engine 
