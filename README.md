@@ -166,3 +166,41 @@ Feel free to fork or contribute!
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
+
+---
+
+## 🖥️ استخدام واجهة الـ API (FastAPI)
+
+بعد نشر المشروع على Railway أو أي سيرفر يدعم Python، يمكنك إرسال صورة إلى نقطة النهاية `/predict` للحصول على نتائج الكشف عن الأجسام.
+
+### مثال على الطلب باستخدام `curl`:
+
+```bash
+curl -X POST "https://YOUR-RAILWAY-URL/predict" \
+  -H "accept: application/json" \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@path/to/image.jpg"
+```
+
+### مثال على الاستجابة:
+```json
+{
+  "results": [
+    {
+      "xmin": 123.4,
+      "ymin": 56.7,
+      "xmax": 234.5,
+      "ymax": 167.8,
+      "confidence": 0.92,
+      "class": 0,
+      "name": "person"
+    },
+    ...
+  ]
+}
+```
+
+- **YOUR-RAILWAY-URL**: استبدلها برابط الخدمة الخاص بك على Railway.
+- كل عنصر في results يمثل كائنًا مكتشفًا مع إحداثيات الصندوق، الثقة، ورقم/اسم الفئة.
+
+---
