@@ -5,7 +5,7 @@ providers = ["python"]
 
 # Define packages to install using Nix package manager
 [phases.setup]
-nixPkgs = ["...", "pkgs.libgl1-mesa-glx", "pkgs.libglib2.0-0", "pkgs.libsm6", "pkgs.libxext6", "pkgs.libxrender-dev"]
+nixPkgs = ["libgl1-mesa-glx", "libglib2", "libsm6", "libxext6", "libxrender"]
 
 # Start command for the application
 [start]
