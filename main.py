@@ -13,6 +13,7 @@ app = FastAPI()
 
 # Check if CUDA is available
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+model_load_error = None # Initialize error variable
 
 try:
     # Get the current directory
@@ -23,12 +24,14 @@ try:
     model_path = os.path.join(current_dir, 'best.pt')
     from yolov5.models.common import DetectMultiBackend
     import torch
-    print(f"Loading model from: {model_path}")
-    model = DetectMultiBackend(model_path, device=device)
+    print(f"Loading model from: {model_path} using device: cpu") # Force CPU
+    # Force CPU for loading, as Railway free tier likely doesn't have GPU
+    model = DetectMultiBackend(model_path, device=torch.device('cpu'))
     model.eval()
     print("Model loaded successfully!")
 except Exception as e:
-    print(f"Error loading model: {str(e)}")
+    model_load_error = str(e)
+    print(f"Error loading model: {model_load_error}")
     model = None
 
 @app.post("/predict")
@@ -62,11 +65,14 @@ async def predict(file: UploadFile = File(...)):
 
 @app.get("/")
 def root():
-    return {
+    response = {
         "message": "YOLOv5 Object Detection API is running.",
         "model_loaded": model is not None,
-        "device": str(device)
+        "device": str(device) # Reports configured device (might differ from loading device)
     }
+    if model_load_error:
+        response["model_load_error"] = model_load_error
+    return response
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
