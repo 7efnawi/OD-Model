@@ -99,6 +99,7 @@ def health():
     return {"status": "ok"}
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", "8000"))
-    print(f"Starting server on port {port}")
+    # Use MAIN_PORT if set by health_check.py, otherwise fallback to PORT or 8000
+    port = int(os.environ.get("MAIN_PORT", os.environ.get("PORT", "8000")))
+    print(f"Starting main application on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)

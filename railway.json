@@ -7,7 +7,9 @@
   "deploy": {
     "numReplicas": 1,
     "healthcheckPath": "/health",
-    "healthcheckTimeout": 300,
-    "restartPolicyType": "ON_FAILURE"
+    "healthcheckTimeout": 600,
+    "startupTime": 300,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
   }
 }
