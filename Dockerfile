@@ -22,8 +22,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application
 COPY . .
 
-# Make sure the port is exposed
+# Make the start script executable
+RUN chmod +x /app/start.sh
+
+# Make sure the port is exposed (informational)
 EXPOSE 8000
 
-# Run python directly
-CMD ["python", "main.py"] 
+# Set the entrypoint to the start script
+ENTRYPOINT ["/app/start.sh"]
+
+# CMD can provide default arguments to ENTRYPOINT if needed, but not necessary here
+# CMD [] 
