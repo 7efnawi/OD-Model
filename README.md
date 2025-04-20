@@ -109,22 +109,22 @@ Then open [http://localhost:6006](http://localhost:6006) in your browser.
 
 ---
 
-## 🚄 النشر على Railway (تعليمات سريعة)
+## 🚄 Deployment on Railway (Quick Instructions)
 
-1. أنشئ حساب مجاني على [Railway](https://railway.app/).
-2. أنشئ مشروع جديد واربطه بمستودع المشروع (GitHub أو ارفع الملفات يدويًا).
-3. في إعدادات الخدمة:
-   - **Environment**: Python 3.10 أو أعلى
+1. Create a free account on [Railway](https://railway.app/).
+2. Create a new project and connect it to your project repository (GitHub or upload files manually).
+3. In the service settings:
+   - **Environment**: Python 3.10 or higher
    - **Start Command**:
      ```bash
      uvicorn main:app --host 0.0.0.0 --port $PORT
      ```
    - **Install Command**: `pip install -r requirements.txt`
-   - **Port**: اتركه افتراضيًا (Railway يحدد المتغير PORT تلقائيًا)
-4. ارفع ملف النموذج `best.pt` مع باقي الملفات.
-5. بعد النشر، استخدم الرابط الذي توفره Railway للوصول إلى واجهة الـ API.
+   - **Port**: Leave as default (Railway sets the PORT variable automatically)
+4. Upload the model file `best.pt` along with other files.
+5. After deployment, use the URL provided by Railway to access the API interface.
 
-> **ملاحظة:** إذا واجهت مشاكل في تحميل النموذج، تأكد أن حجم الملف لا يتجاوز الحد المسموح في Railway (عادةً 500MB للملفات الفردية في الخطة المجانية).
+> **Note:** If you encounter issues loading the model, ensure the file size doesn't exceed Railway's limit (typically 500MB for individual files on the free plan).
 
 ---
 
@@ -169,11 +169,11 @@ This project is licensed under the [MIT License](LICENSE).
 
 ---
 
-## 🖥️ استخدام واجهة الـ API (FastAPI)
+## 🖥️ Using the API (FastAPI)
 
-بعد نشر المشروع على Railway أو أي سيرفر يدعم Python، يمكنك إرسال صورة إلى نقطة النهاية `/predict` للحصول على نتائج الكشف عن الأجسام.
+After deploying the project on Railway or any server that supports Python, you can send an image to the `/predict` endpoint to get object detection results.
 
-### مثال على الطلب باستخدام `curl`:
+### Example request using `curl`:
 
 ```bash
 curl -X POST "https://YOUR-RAILWAY-URL/predict" \
@@ -182,7 +182,8 @@ curl -X POST "https://YOUR-RAILWAY-URL/predict" \
   -F "file=@path/to/image.jpg"
 ```
 
-### مثال على الاستجابة:
+### Example response:
+
 ```json
 {
   "results": [
@@ -200,7 +201,7 @@ curl -X POST "https://YOUR-RAILWAY-URL/predict" \
 }
 ```
 
-- **YOUR-RAILWAY-URL**: استبدلها برابط الخدمة الخاص بك على Railway.
-- كل عنصر في results يمثل كائنًا مكتشفًا مع إحداثيات الصندوق، الثقة، ورقم/اسم الفئة.
+- **YOUR-RAILWAY-URL**: Replace with your service URL on Railway.
+- Each item in results represents a detected object with box coordinates, confidence, and class number/name.
 
 ---
