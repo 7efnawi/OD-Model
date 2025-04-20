@@ -14,4 +14,4 @@ WORKDIR /app
 COPY . .
 RUN pip install -r requirements.txt
 
-CMD ["python", "main.py"] 
+CMD ["sh", "-c", "python main.py --port=${PORT:-8000}"]
