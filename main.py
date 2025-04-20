@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
 import uvicorn
 import torch
@@ -7,31 +7,58 @@ from PIL import Image
 import io
 import os
 import torchvision.transforms as T
+import threading
 
 app = FastAPI()
 
 # Check if CUDA is available
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-try:
-    # Get the current directory
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.join(current_dir, 'best.pt')
-    
-    # Load YOLOv5 model
-    print(f"Loading model from: {model_path}")
-    from yolov5.models.common import DetectMultiBackend
-    model = DetectMultiBackend(model_path, device=device)
-    model.eval()
-    print("Model loaded successfully!")
-except Exception as e:
-    print(f"Error loading model: {str(e)}")
-    model = None
+# Global variables
+model = None
+model_loading = False
+model_error = None
+
+def load_model_in_background():
+    global model, model_loading, model_error
+    try:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        model_path = os.path.join(current_dir, 'best.pt')
+        
+        print(f"Loading model from: {model_path}")
+        from yolov5.models.common import DetectMultiBackend
+        loaded_model = DetectMultiBackend(model_path, device=device)
+        loaded_model.eval()
+        
+        # Only update the global model once fully loaded
+        model = loaded_model
+        print("Model loaded successfully!")
+    except Exception as e:
+        model_error = str(e)
+        print(f"Error loading model: {str(e)}")
+    finally:
+        model_loading = False
+
+@app.on_event("startup")
+async def startup_event():
+    global model_loading
+    model_loading = True
+    # Start loading model in a background thread
+    thread = threading.Thread(target=load_model_in_background)
+    thread.daemon = True
+    thread.start()
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     if model is None:
-        raise HTTPException(status_code=500, detail="Model not loaded properly")
+        if model_loading:
+            return JSONResponse(status_code=503, content={
+                "error": "Model is still loading. Please try again in a moment."
+            })
+        else:
+            return JSONResponse(status_code=500, content={
+                "error": f"Model failed to load: {model_error or 'Unknown error'}"
+            })
         
     try:
         contents = await file.read()
@@ -61,9 +88,15 @@ async def predict(file: UploadFile = File(...)):
 def root():
     return {
         "message": "YOLOv5 Object Detection API is running.",
-        "model_loaded": model is not None,
-        "device": str(device)
+        "model_status": "loading" if model_loading else "loaded" if model is not None else "failed",
+        "device": str(device),
+        "model_error": model_error
     }
+
+@app.get("/health")
+def health():
+    # Always respond with 200 OK for Railway health checks
+    return {"status": "ok"}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8000"))

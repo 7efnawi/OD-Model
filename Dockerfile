@@ -14,4 +14,7 @@ WORKDIR /app
 COPY . .
 RUN pip install -r requirements.txt
 
-CMD ["sh", "-c", "python main.py --port=${PORT:-8000}"]
+# Explicitly expose port 8000
+EXPOSE 8000
+
+CMD ["python", "main.py"]
