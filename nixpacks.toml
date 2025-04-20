@@ -1,0 +1,12 @@
+# nixpacks.toml
+
+# Define providers for the environment
+providers = ["python"]
+
+# Define packages to install using Nix package manager
+[phases.setup]
+nixPkgs = ["...", "pkgs.libgl1-mesa-glx", "pkgs.libglib2.0-0", "pkgs.libsm6", "pkgs.libxext6", "pkgs.libxrender-dev"]
+
+# Start command for the application
+[start]
+cmd = "uvicorn main:app --host 0.0.0.0 --port $PORT" 
