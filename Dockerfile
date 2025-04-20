@@ -17,9 +17,5 @@ RUN pip install -r requirements.txt
 # Explicitly expose port 8000
 EXPOSE 8000
 
-# Set Flask environment variables
-ENV FLASK_APP=app.py
-ENV FLASK_ENV=production
-
-# Simple command to run Flask
+# Run the Flask application directly
 CMD ["python", "app.py"]
