@@ -6,6 +6,7 @@
   },
   "deploy": {
     "numReplicas": 1,
+    "startCommand": "python app.py",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 60,
     "startupTime": 300,
