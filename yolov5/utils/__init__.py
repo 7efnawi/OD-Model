@@ -5,14 +5,6 @@ import contextlib
 import platform
 import threading
 
-# Make yolov5/utils directory a proper Python package
-# Include imports for commonly used modules
-from . import general
-from . import metrics
-from . import augmentations
-from . import autoanchor
-
-
 def emojis(str=""):
     """Returns an emoji-safe version of a string, stripped of emojis on Windows platforms."""
     return str.encode().decode("ascii", "ignore") if platform.system() == "Windows" else str
@@ -62,6 +54,13 @@ def join_threads(verbose=False):
             if verbose:
                 print(f"Joining thread {t.name}")
             t.join()
+
+# Make yolov5/utils directory a proper Python package
+# Include imports for commonly used modules
+from . import general
+from . import metrics
+from . import augmentations
+from . import autoanchor
 
 
 def notebook_init(verbose=True):

@@ -5,6 +5,8 @@ import threading
 import torch
 from PIL import Image
 import io
+import numpy as np
+import cv2
 
 app = Flask(__name__)
 
@@ -84,6 +86,12 @@ def load_model_in_background():
         loaded_model = DetectMultiBackend(model_path, device=device)
         loaded_model.eval()
         
+        # Try a test warmup inference to catch any issues
+        dummy_img = torch.zeros((1, 3, 640, 640)).to(device)
+        print("Running warmup inference...")
+        _ = loaded_model(dummy_img)
+        print("Warmup successful")
+        
         # Only update the global model once fully loaded
         model = loaded_model
         print("Model loaded successfully!")
@@ -134,28 +142,73 @@ def predict():
         return jsonify({"error": "No selected file"}), 400
     
     try:
-        # Read and process the image
+        # Very simple approach - just get the image tensor
         img_bytes = file.read()
         img = Image.open(io.BytesIO(img_bytes)).convert('RGB')
         
-        # Make prediction
-        results = model(img)
+        # Save original dimensions for scaling back the bounding boxes
+        orig_width, orig_height = img.size
         
-        # Convert results to JSON format
+        # Resize the image to YOLOv5 standard input size
+        img = img.resize((640, 640))
+        
+        # Convert to tensor
+        img_tensor = torch.from_numpy(np.array(img).transpose(2, 0, 1)).float()
+        img_tensor = img_tensor.unsqueeze(0) / 255.0  # Add batch dimension and normalize
+        
+        # Process with the model
+        with torch.no_grad():
+            results = model(img_tensor)
+        
+        # Process the results
         results_json = []
-        for pred in results.xyxy[0]:  # xyxy format: x1, y1, x2, y2, confidence, class
+        
+        # Extract detections from output
+        detections = results[0].cpu().numpy()  # Access first element and convert to numpy
+        
+        # Standard YOLOv5 output format: xywh, confidence, class
+        if len(detections.shape) == 3:  # [batch, num_detections, detection_data]
+            detections = detections[0]  # Get the first batch
+        
+        # Process each detection
+        for detection in detections:
+            # Standard YOLOv5 detection has 6 values: x, y, w, h, confidence, class
+            if len(detection) < 6:
+                continue
+                
+            x_center, y_center, width, height, confidence, class_id = detection[:6]
+            
+            # Convert normalized coordinates to pixel values for the original image
+            x1 = (x_center - width/2) * orig_width / 640
+            y1 = (y_center - height/2) * orig_height / 640
+            x2 = (x_center + width/2) * orig_width / 640
+            y2 = (y_center + height/2) * orig_height / 640
+            
+            # Get class name if available
+            class_name = f"class_{int(class_id)}"
+            if hasattr(model, 'names') and int(class_id) in model.names:
+                class_name = model.names[int(class_id)]
+            
+            # Add detection to results
             results_json.append({
-                'xmin': float(pred[0]),
-                'ymin': float(pred[1]),
-                'xmax': float(pred[2]),
-                'ymax': float(pred[3]),
-                'confidence': float(pred[4]),
-                'class': int(pred[5]),
-                'name': results.names[int(pred[5])]
+                'xmin': float(x1),
+                'ymin': float(y1),
+                'xmax': float(x2),
+                'ymax': float(y2),
+                'confidence': float(confidence),
+                'class': int(class_id),
+                'name': class_name
             })
         
-        return jsonify({"results": results_json})
+        return jsonify({
+            "status": "success",
+            "message": "Image processed successfully",
+            "detections": results_json,
+            "count": len(results_json)
+        })
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 # Start the model loading after app has been fully initialized
