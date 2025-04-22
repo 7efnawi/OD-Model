@@ -97,8 +97,7 @@ def load_model_in_background():
         model_loading = False
 
 # Start model loading in background when app starts
-@app.before_first_request
-def before_first_request():
+def load_model_on_startup():
     global model_loading
     if not model and not model_loading:
         model_loading = True
@@ -159,6 +158,10 @@ def predict():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# Start the model loading after app has been fully initialized
+load_model_on_startup()
+
 if __name__ == '__main__':
+    # Model loading is already started at the top level
     port = int(os.environ.get('PORT', 8000))
     app.run(host='0.0.0.0', port=port) 

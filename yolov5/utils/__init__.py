@@ -5,6 +5,13 @@ import contextlib
 import platform
 import threading
 
+# Make yolov5/utils directory a proper Python package
+# Include imports for commonly used modules
+from . import general
+from . import metrics
+from . import augmentations
+from . import autoanchor
+
 
 def emojis(str=""):
     """Returns an emoji-safe version of a string, stripped of emojis on Windows platforms."""

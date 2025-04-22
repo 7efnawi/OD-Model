@@ -109,26 +109,173 @@ Then open [http://localhost:6006](http://localhost:6006) in your browser.
 
 ---
 
-## 🚄 Deployment on Railway (Quick Instructions)
+## 🚄 Deployment on Railway
 
-1. Create a free account on [Railway](https://railway.app/).
-2. Create a new project and connect it to your project repository (GitHub or upload files manually).
-3. In the service settings:
-   - **Environment**: Python 3.10 or higher
-   - **Start Command**:
-     ```bash
-     uvicorn main:app --host 0.0.0.0 --port $PORT
-     ```
-   - **Install Command**: `pip install -r requirements.txt`
-   - **Port**: Leave as default (Railway sets the PORT variable automatically)
-4. Upload the model file `best.pt` along with other files.
-5. After deployment, use the URL provided by Railway to access the API interface.
+This project provides a REST API for object detection using YOLOv5, with easy deployment on Railway.
 
-> **Note:** If you encounter issues loading the model, ensure the file size doesn't exceed Railway's limit (typically 500MB for individual files on the free plan).
+### Features
 
----
+- REST API built with Flask
+- Object detection using pre-trained YOLOv5 model
+- Background model loading allowing the server to respond immediately
+- Full compatibility with Railway deployment platform
 
-## 💡 Known Issues & Fixes
+### Requirements
+
+- Python 3.9 or newer
+- Dependencies listed in `requirements.txt`
+
+### Local Installation
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/7efnawi/OD-Model.git
+cd OD-Model
+```
+
+2. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+3. Run the application:
+
+```bash
+python app.py
+```
+
+4. The application will be available at `http://localhost:8000`
+
+### Deployment on Railway
+
+1. Create an account on Railway.app
+2. Create a new project and link it to your GitHub repository
+3. Railway will automatically detect the presence of a Dockerfile and use it for building and deployment
+
+### API Endpoints
+
+#### 1. Main Endpoint
+
+- **URL**: `/`
+- **Method**: GET
+- **Response**: Model status and application information
+
+```json
+{
+  "message": "YOLOv5 Object Detection API",
+  "model_status": "loaded",
+  "error": null
+}
+```
+
+#### 2. Health Check
+
+- **URL**: `/health`
+- **Method**: GET
+- **Response**: Application status
+
+```json
+{
+  "status": "ok"
+}
+```
+
+#### 3. Object Detection
+
+- **URL**: `/predict`
+- **Method**: POST
+- **Content-Type**: multipart/form-data
+- **Data**:
+  - `file`: Image file to be analyzed
+- **Response**: Object detection results
+
+```json
+{
+  "results": [
+    {
+      "xmin": 120.5,
+      "ymin": 220.3,
+      "xmax": 250.8,
+      "ymax": 380.1,
+      "confidence": 0.85,
+      "class": 0,
+      "name": "person"
+    }
+  ]
+}
+```
+
+## 💡 Technical Challenges and Solutions
+
+We faced several challenges during the deployment of this project on Railway. Here's a record of the problems and how we solved them:
+
+### 1. "Application failed to respond" Issue
+
+**Problem**: After deploying the application on Railway, health checks failed because the model takes a long time to load.
+
+**Solution**: Implemented background model loading using threading, allowing the server to respond to health checks immediately while the model loads.
+
+```python
+@app.before_first_request
+def before_first_request():
+    global model_loading
+    if not model and not model_loading:
+        model_loading = True
+        thread = threading.Thread(target=load_model_in_background)
+        thread.daemon = True
+        thread.start()
+```
+
+### 2. "The executable `uvicorn` could not be found" Issue
+
+**Problem**: Encountered an error when trying to run FastAPI using uvicorn.
+
+**Solution**:
+
+1. Switched from FastAPI to Flask to simplify the process
+2. Added uvicorn to requirements.txt as a backup
+3. Modified Dockerfile and railway.json file
+
+### 3. "No module named 'utils'" Issue
+
+**Problem**: Encountered an issue importing the utils module from YOLOv5.
+
+**Solution**:
+
+1. Added all necessary paths to `sys.path`
+2. Ensured the presence of `__init__.py` files in relevant directories
+3. Implemented a multi-stage import strategy with fallback mechanisms
+
+```python
+for path in [current_dir, yolov5_dir, os.path.join(yolov5_dir, 'models'), os.path.join(yolov5_dir, 'utils')]:
+    if path not in sys.path:
+        sys.path.insert(0, path)
+```
+
+### 4. Docker Environment Variables Issue
+
+**Problem**: Failure in interpreting environment variables in Dockerfile.
+
+**Solution**:
+
+1. Simplified Dockerfile and removed CMD commands
+2. Added `startCommand` to railway.json file
+3. Used Python directly instead of a command-line tool
+
+### 5. Final Integration Issues
+
+**Problem**: Integrating all previous solutions.
+
+**Solution**:
+
+1. Unified all solutions into a simple Flask application
+2. Used background model loading mechanism
+3. Properly configured health check endpoints
+4. Updated configuration files for Railway
+
+### Other Known Issues & Fixes
 
 - **OMP Error**: Set the following before running training
 
@@ -144,7 +291,36 @@ Then open [http://localhost:6006](http://localhost:6006) in your browser.
 
 - **TensorBoard compatibility**: Downgrade to `tensorboard==2.10.1` to match TensorFlow-GPU 2.10
 
----
+## 🖥️ Usage Examples
+
+### Using cURL
+
+```bash
+curl -X POST -F "file=@path/to/image.jpg" https://od-model-production.up.railway.app/predict
+```
+
+### Using Python
+
+```python
+import requests
+
+url = "https://od-model-production.up.railway.app/predict"
+image_path = "path/to/image.jpg"
+
+with open(image_path, "rb") as image_file:
+    files = {"file": image_file}
+    response = requests.post(url, files=files)
+
+print(response.json())
+```
+
+## 📋 Tips for Railway Deployment
+
+1. Ensure a simple and straightforward Dockerfile
+2. Use railway.json file to provide deployment settings
+3. Implement health checks properly
+4. Use background model loading to avoid health check timeout
+5. Proactively handle Python import issues
 
 ## 📥 Dataset Notes
 
@@ -153,55 +329,14 @@ Then open [http://localhost:6006](http://localhost:6006) in your browser.
 - Balanced across classes
 - Label files located alongside each image
 
----
-
 ## 👨‍💻 Maintainer
 
 **Capstone Project - NCT 2025**  
 Model trained and optimized locally on limited hardware  
 Feel free to fork or contribute!
 
----
-
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
-
----
-
-## 🖥️ Using the API (FastAPI)
-
-After deploying the project on Railway or any server that supports Python, you can send an image to the `/predict` endpoint to get object detection results.
-
-### Example request using `curl`:
-
-```bash
-curl -X POST "https://YOUR-RAILWAY-URL/predict" \
-  -H "accept: application/json" \
-  -H "Content-Type: multipart/form-data" \
-  -F "file=@path/to/image.jpg"
-```
-
-### Example response:
-
-```json
-{
-  "results": [
-    {
-      "xmin": 123.4,
-      "ymin": 56.7,
-      "xmax": 234.5,
-      "ymax": 167.8,
-      "confidence": 0.92,
-      "class": 0,
-      "name": "person"
-    },
-    ...
-  ]
-}
-```
-
-- **YOUR-RAILWAY-URL**: Replace with your service URL on Railway.
-- Each item in results represents a detected object with box coordinates, confidence, and class number/name.
 
 ---
